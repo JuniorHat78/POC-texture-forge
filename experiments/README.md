@@ -26,6 +26,8 @@ python -m experiments.texture_cli batch --style lava --seed 3000 --size 256 --co
 python -m experiments.texture_cli inspect --input textures/batch_lava --out textures/review/lava_batch --limit 12 --columns 4
 ```
 
+Each generated PNG now includes a sidecar JSON (`same-name.json`) with full params for inspection and auditability.
+
 ### CLI safety flags
 ```bash
 python -m experiments.texture_cli render --style moss --seed 42 --size 256 --dry-run --out textures
@@ -102,7 +104,7 @@ CI automation:
 Run a quality checkpoint:
 
 1. Generate a batch or matrix with fixed seed range.
-2. Run `inspect` with a quality profile to produce:
+2. Run `inspect` with a quality profile to evaluate actual PNG pixels and produce:
    - `quality-report.json`
    - `contact-sheet.png`
 3. Use `--timestamped` when you want historical artifacts per run.

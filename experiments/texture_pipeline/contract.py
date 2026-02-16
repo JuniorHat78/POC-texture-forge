@@ -24,6 +24,8 @@ def _require_int(name: str, value: Any) -> int:
 
 
 def _require_float(name: str, value: Any) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be a number")
     try:
         cast = float(value)
     except (TypeError, ValueError) as exc:

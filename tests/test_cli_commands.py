@@ -50,6 +50,11 @@ class TextureCliTests(unittest.TestCase):
             self.assertEqual(code, 0)
             pngs = list(pathlib.Path(tmp_dir).glob("*.png"))
             self.assertEqual(len(pngs), 1)
+            sidecars = list(pathlib.Path(tmp_dir).glob("*.json"))
+            self.assertEqual(len(sidecars), 1)
+            payload = json.loads(sidecars[0].read_text(encoding="utf-8"))
+            self.assertIn("params", payload)
+            self.assertEqual(payload["params"]["style"], "moss")
 
     def test_batch_creates_many_pngs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -114,6 +119,8 @@ class TextureCliTests(unittest.TestCase):
             self.assertEqual(code, 0)
             pngs = list(pathlib.Path(tmp_dir).glob("*.png"))
             self.assertEqual(len(pngs), 6)
+            sidecars = list(pathlib.Path(tmp_dir).glob("*.json"))
+            self.assertEqual(len(sidecars), 6)
 
     def test_matrix_subset_generates_expected_count(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -229,6 +236,8 @@ class TextureCliTests(unittest.TestCase):
             self.assertEqual(summary["quality_profile"], "strict")
             self.assertIn("quality_thresholds", summary)
             self.assertIn("max_seam_score", summary["quality_thresholds"])
+            self.assertIn("skipped_files", summary)
+            self.assertEqual(summary["skipped"], 0)
 
     def test_inspect_timestamped_writes_nested_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

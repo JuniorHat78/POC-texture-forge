@@ -10,7 +10,7 @@ from typing import Iterable
 
 from .texture_pipeline.contract import TextureParams
 from .texture_pipeline.core import TextureImage, generate_texture
-from .texture_pipeline.io import write_json, write_png
+from .texture_pipeline.io import read_json, read_png, write_json, write_png
 from .texture_pipeline.presets import (
     defaults,
     get_quality_profile,
@@ -69,6 +69,14 @@ def _render_one(params: TextureParams, out_dir: Path, *, name_override: str | No
     path = out_dir / f"{stem}.png"
     image = generate_texture(params)
     write_png(path, image)
+    write_json(
+        path.with_suffix(".json"),
+        {
+            "params": params.as_dict(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generator": "texture-cli",
+        },
+    )
     return path
 
 
@@ -181,30 +189,52 @@ def _inspect_textures(
     input_dir: Path,
     *,
     thresholds: QualityThresholds,
-) -> tuple[list[dict[str, object]], list[TextureImage], int]:
+) -> tuple[list[dict[str, object]], list[TextureImage], int, list[str]]:
     results: list[dict[str, object]] = []
     images: list[TextureImage] = []
     skipped = 0
+    skipped_files: list[str] = []
+
+    def _params_for_file(png_path: Path) -> dict[str, object]:
+        sidecar_path = png_path.with_suffix(".json")
+        if sidecar_path.exists():
+            try:
+                sidecar_data = read_json(sidecar_path)
+            except (OSError, ValueError):
+                sidecar_data = None
+            if isinstance(sidecar_data, dict):
+                candidate = sidecar_data.get("params", sidecar_data)
+                if isinstance(candidate, dict):
+                    try:
+                        return TextureParams.from_overrides(candidate).as_dict()
+                    except ValueError:
+                        pass
+
+        try:
+            return TextureParams.from_filename_stem(png_path.stem).as_dict()
+        except ValueError:
+            return {"style": "unknown"}
 
     for png_path in sorted(input_dir.glob("*.png")):
         try:
-            params = TextureParams.from_filename_stem(png_path.stem)
-        except ValueError:
+            image = read_png(png_path)
+        except (OSError, ValueError):
             skipped += 1
+            skipped_files.append(png_path.name)
             continue
 
-        image = generate_texture(params)
+        params_dict = _params_for_file(png_path)
         metrics = evaluate_quality(image, thresholds=thresholds)
         results.append(
             {
                 "file": png_path.name,
-                "params": params.as_dict(),
+                "params": params_dict,
                 "metrics": metrics,
             }
         )
         images.append(image)
 
-    return results, images, skipped
+    return results, images, skipped, skipped_files
 
 
 def _summarize_metrics(rows: Iterable[dict[str, object]]) -> dict[str, float | int | dict[str, object] | list[str]]:
@@ -232,8 +262,10 @@ def _summarize_metrics(rows: Iterable[dict[str, object]]) -> dict[str, float | i
 
     style_map: dict[str, list[dict[str, object]]] = {}
     for row in rows_list:
-        params = row["params"]  # type: ignore[index]
-        style = str(params["style"])  # type: ignore[index]
+        params = row.get("params", {})
+        style = "unknown"
+        if isinstance(params, dict):
+            style = str(params.get("style", "unknown"))
         style_map.setdefault(style, []).append(row)
 
     style_breakdown: dict[str, object] = {}
@@ -264,6 +296,12 @@ def _command_inspect(args: argparse.Namespace) -> int:
     if not input_dir.exists():
         print(f"error: input directory does not exist: {input_dir}", file=sys.stderr)
         return 2
+    if args.limit <= 0:
+        print("error: --limit must be > 0", file=sys.stderr)
+        return 2
+    if args.columns <= 0:
+        print("error: --columns must be > 0", file=sys.stderr)
+        return 2
 
     try:
         thresholds = QualityThresholds.from_mapping(get_quality_profile(args.quality_profile))
@@ -271,9 +309,9 @@ def _command_inspect(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    rows, images, skipped = _inspect_textures(input_dir, thresholds=thresholds)
+    rows, images, skipped, skipped_files = _inspect_textures(input_dir, thresholds=thresholds)
     if not rows:
-        print("error: no parseable texture files found for inspection", file=sys.stderr)
+        print("error: no decodable PNG texture files found for inspection", file=sys.stderr)
         return 2
 
     out_dir = Path(args.out)
@@ -284,6 +322,7 @@ def _command_inspect(args: argparse.Namespace) -> int:
 
     summary = _summarize_metrics(rows)
     summary["skipped"] = skipped
+    summary["skipped_files"] = skipped_files
     summary["generated_at"] = datetime.now(timezone.utc).isoformat()
     summary["input_dir"] = str(input_dir.resolve())
     summary["quality_profile"] = args.quality_profile

@@ -9,6 +9,18 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from experiments.texture_cli import main
+from experiments.texture_pipeline.core import TextureImage
+from experiments.texture_pipeline.io import write_png
+
+
+def _solid_image(width: int, height: int, rgba: tuple[int, int, int, int]) -> TextureImage:
+    pixels = bytearray(width * height * 4)
+    for idx in range(0, len(pixels), 4):
+        pixels[idx] = rgba[0]
+        pixels[idx + 1] = rgba[1]
+        pixels[idx + 2] = rgba[2]
+        pixels[idx + 3] = rgba[3]
+    return TextureImage(width=width, height=height, pixels=bytes(pixels))
 
 
 class TextureCliErrorPathTests(unittest.TestCase):
@@ -62,7 +74,7 @@ class TextureCliErrorPathTests(unittest.TestCase):
     def test_inspect_strict_fails_when_any_texture_fails_quality(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             fake_texture = pathlib.Path(tmp_dir) / "moss-10-128-h45.png"
-            fake_texture.write_bytes(b"placeholder")
+            write_png(fake_texture, _solid_image(8, 8, (120, 120, 120, 255)))
 
             failing_metrics = {
                 "seam_score": 0.99,
@@ -90,6 +102,40 @@ class TextureCliErrorPathTests(unittest.TestCase):
                 )
 
             self.assertEqual(code, 3)
+
+    def test_inspect_rejects_non_positive_limit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            texture = pathlib.Path(tmp_dir) / "moss-11-128-h45.png"
+            write_png(texture, _solid_image(8, 8, (120, 120, 120, 255)))
+            code = main(
+                [
+                    "inspect",
+                    "--input",
+                    tmp_dir,
+                    "--out",
+                    str(pathlib.Path(tmp_dir) / "review"),
+                    "--limit",
+                    "0",
+                ]
+            )
+            self.assertEqual(code, 2)
+
+    def test_inspect_rejects_non_positive_columns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            texture = pathlib.Path(tmp_dir) / "moss-12-128-h45.png"
+            write_png(texture, _solid_image(8, 8, (120, 120, 120, 255)))
+            code = main(
+                [
+                    "inspect",
+                    "--input",
+                    tmp_dir,
+                    "--out",
+                    str(pathlib.Path(tmp_dir) / "review"),
+                    "--columns",
+                    "0",
+                ]
+            )
+            self.assertEqual(code, 2)
 
     def test_matrix_rejects_bad_style_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
