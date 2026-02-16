@@ -1,0 +1,138 @@
+:root {
+    --bg: #111827;
+    --panel: #0b1220;
+    --canvas: #1f2937;
+    --grid: #334155;
+    --snake-head: #86efac;
+    --snake-body: #22c55e;
+    --food: #ef4444;
+    --text: #f8fafc;
+    --muted: #cbd5e1;
+    --accent: #38bdf8;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at top, #1e293b, #0f172a 65%);
+    color: var(--text);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.app {
+    width: min(92vw, 760px);
+    background: rgba(11, 18, 32, 0.92);
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+h1 {
+    margin: 0 0 6px;
+    font-size: 1.6rem;
+    letter-spacing: 0.4px;
+}
+
+p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.scores {
+    text-align: right;
+    display: grid;
+    gap: 4px;
+    min-width: 125px;
+}
+
+.scores strong {
+    color: var(--text);
+}
+
+.board-wrap {
+    position: relative;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+canvas {
+    display: block;
+    width: min(100%, 600px);
+    height: auto;
+    background: var(--canvas);
+    border: 2px solid #475569;
+    border-radius: 10px;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--text);
+    background: rgba(2, 6, 23, 0.4);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.controls {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 120ms ease, filter 120ms ease;
+    background: var(--accent);
+    color: #0f172a;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+@media (max-width: 720px) {
+    .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .scores {
+        text-align: left;
+    }
+}

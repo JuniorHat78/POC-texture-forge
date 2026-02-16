@@ -1,0 +1,51 @@
+name: Texture Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  texture-quality-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run release quality gate
+        run: >
+          python -m experiments.release_quality_gate
+          --styles all
+          --count-per-style 1
+          --size 128
+          --seed 9500
+          --preset game-ready
+          --quality-profile default
+          --allow-failures 0
+
+      - name: Upload gate reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: texture-gate-reports
+          path: textures/review/gates
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload gate samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: texture-gate-samples
+          path: textures/gate_samples
+          if-no-files-found: warn
+          retention-days: 7

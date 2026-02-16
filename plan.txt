@@ -1,0 +1,95 @@
+Texture System Refactor Plan
+============================
+
+Goal
+----
+Build a modular, robust texture workflow with:
+1) a streamlined GUI for beginners,
+2) a reliable CLI for repeatable generation,
+3) test-driven development as the default process,
+4) frequent image-quality inspection checkpoints.
+
+Primary Requirements
+--------------------
+1) Modular architecture with clear boundaries.
+2) Robust behavior under bad inputs and edge cases.
+3) TDD-first implementation loop.
+4) Visual quality checks performed repeatedly, not only at the end.
+5) Planning artifacts documented in this file and mini-spec.md.
+
+Execution Phases
+----------------
+Phase 0 - Baseline and Contracts
+1) Freeze current behavior and catalog existing files.
+2) Define shared parameter contract:
+   - style, seed, size, scale, octaves, roughness, contrast, grain, handcraft
+3) Define acceptance criteria and quality thresholds.
+4) Create initial failing tests for contract validation.
+
+Phase 1 - Core Modularization
+1) Extract generation logic into a dedicated core module.
+2) Extract style/preset definitions into a shared data source.
+3) Isolate handcraft/paint logic into a separate module.
+4) Add parameter validation layer with strict error messages.
+5) Add unit tests for deterministic generation and validation.
+
+Phase 2 - GUI Streamlining
+1) Introduce Basic mode as the default surface:
+   - style, seed, size, variation, handcraft, render, export
+2) Move advanced controls into collapsible sections.
+3) Keep seamless painting and handcrafted pass in advanced tools.
+4) Add inline guidance labels and safe defaults.
+5) Add UI behavior tests where practical and manual UX smoke checks.
+
+Phase 3 - CLI Buildout
+1) Create CLI entrypoint with subcommands:
+   - render (single texture)
+   - batch (N textures)
+   - inspect (quality report)
+2) Implement deterministic naming and output management.
+3) Add preset support and parameter overrides.
+4) Add CLI tests for argument parsing, defaults, and failure paths.
+
+Phase 4 - Quality Inspection Pipeline
+1) Add automatic seam checks and basic texture metrics:
+   - edge mismatch score
+   - luminance spread
+   - contrast range
+2) Add visual contact sheet generation for fast review.
+3) Add recurring review cadence:
+   - after each completed phase
+   - after every major parameter tuning change
+   - before final sign-off
+4) Save quality artifacts under textures/review/ with timestamps.
+
+Phase 5 - Hardening and Documentation
+1) Add integration tests across GUI/CLI parameter parity.
+2) Add regression tests for known bugs.
+3) Update README usage docs and quickstart commands.
+4) Final pass on error handling and user-facing messages.
+
+TDD Workflow (Non-Negotiable)
+-----------------------------
+For each feature:
+1) Write failing tests first.
+2) Implement minimum code to pass.
+3) Refactor for clarity and module boundaries.
+4) Re-run all tests.
+5) Run image inspection checks and review outputs.
+6) Only then merge/update next module.
+
+Definition of Done
+------------------
+1) All automated tests pass.
+2) Deterministic generation verified by seed-based tests.
+3) Seam quality checks pass within agreed thresholds.
+4) Visual review completed for generated sample sets.
+5) GUI and CLI workflows both documented and usable end-to-end.
+
+Review and Sign-off Gates
+-------------------------
+Gate A: Architecture and module boundaries approved.
+Gate B: GUI Basic mode approved.
+Gate C: CLI behavior and command ergonomics approved.
+Gate D: Quality pipeline outputs approved.
+Gate E: Final system sign-off.

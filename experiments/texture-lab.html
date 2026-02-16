@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texture Lab</title>
+    <link rel="stylesheet" href="texture-lab.css">
+</head>
+<body>
+    <main class="lab">
+        <header class="hero">
+            <p class="tag">Procedural Playground</p>
+            <h1>Texture Lab</h1>
+            <p class="sub">Generate a base texture, then handcraft over it by painting directly on the tile. No installs, just open this file in a browser.</p>
+        </header>
+
+        <section class="panel controls">
+            <h2>Controls</h2>
+            <div class="field-row">
+                <label for="modeSelect">Workflow Mode</label>
+                <select id="modeSelect">
+                    <option value="basic" selected>Basic (Recommended)</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+            </div>
+
+            <div class="field-row">
+                <label for="styleSelect">Style</label>
+                <select id="styleSelect">
+                    <option value="moss">Mossy Stone</option>
+                    <option value="lava">Lava Crust</option>
+                    <option value="metal">Brushed Metal</option>
+                    <option value="sand">Dune Sand</option>
+                    <option value="ice">Cracked Ice</option>
+                    <option value="toxic">Toxic Slime</option>
+                </select>
+            </div>
+
+            <div class="field-row seed-row">
+                <label for="seedInput">Seed</label>
+                <input id="seedInput" type="number" min="1" max="999999999" step="1" value="31872491">
+                <button id="seedBtn" type="button" class="small">Random Seed</button>
+            </div>
+
+            <div class="field-row">
+                <label for="sizeSelect">Texture Size</label>
+                <select id="sizeSelect">
+                    <option value="128">128 x 128</option>
+                    <option value="256" selected>256 x 256</option>
+                    <option value="512">512 x 512</option>
+                </select>
+            </div>
+
+            <div class="field-row">
+                <label for="variationInput">Variation <span id="variationValue" class="value-pill">0.50</span></label>
+                <input id="variationInput" type="range" min="0" max="100" step="1" value="50">
+            </div>
+
+            <details class="advanced-only advanced-group" open>
+                <summary>Advanced Generation Controls</summary>
+                <div class="field-row">
+                    <label for="scaleInput">Cell Scale <span id="scaleValue" class="value-pill">7</span></label>
+                    <input id="scaleInput" type="range" min="2" max="18" step="1" value="7">
+                </div>
+
+                <div class="field-row">
+                    <label for="octavesInput">Detail Layers <span id="octavesValue" class="value-pill">4</span></label>
+                    <input id="octavesInput" type="range" min="1" max="6" step="1" value="4">
+                </div>
+
+                <div class="field-row">
+                    <label for="roughnessInput">Roughness <span id="roughnessValue" class="value-pill">0.72</span></label>
+                    <input id="roughnessInput" type="range" min="0" max="120" step="1" value="72">
+                </div>
+
+                <div class="field-row">
+                    <label for="contrastInput">Contrast <span id="contrastValue" class="value-pill">1.18</span></label>
+                    <input id="contrastInput" type="range" min="60" max="220" step="1" value="118">
+                </div>
+
+                <div class="field-row">
+                    <label for="grainInput">Grain <span id="grainValue" class="value-pill">0.08</span></label>
+                    <input id="grainInput" type="range" min="0" max="40" step="1" value="8">
+                </div>
+            </details>
+
+            <div class="field-row">
+                <label for="handcraftInput">Handcraft Strength <span id="handcraftValue" class="value-pill">0.45</span></label>
+                <input id="handcraftInput" type="range" min="0" max="100" step="1" value="45">
+            </div>
+
+            <details class="advanced-only advanced-group">
+                <summary>Advanced Paint Controls</summary>
+                <div class="field-row">
+                    <label for="brushSizeInput">Brush Size <span id="brushSizeValue" class="value-pill">9</span></label>
+                    <input id="brushSizeInput" type="range" min="2" max="28" step="1" value="9">
+                </div>
+
+                <div class="field-row">
+                    <label for="brushOpacityInput">Brush Opacity <span id="brushOpacityValue" class="value-pill">0.34</span></label>
+                    <input id="brushOpacityInput" type="range" min="5" max="100" step="1" value="34">
+                </div>
+
+                <div class="field-row">
+                    <label for="brushModeSelect">Brush Mode</label>
+                    <select id="brushModeSelect">
+                        <option value="tint">Tint</option>
+                        <option value="lighten">Lighten</option>
+                        <option value="darken">Darken</option>
+                    </select>
+                </div>
+
+                <div class="field-row">
+                    <label for="brushColorInput">Brush Color</label>
+                    <input id="brushColorInput" type="color" value="#d0f08e">
+                </div>
+
+                <div class="actions actions-two">
+                    <button id="applyHandcraftBtn" type="button">Apply Handcrafted Pass</button>
+                    <button id="clearPaintBtn" type="button">Clear Paint Layer</button>
+                </div>
+            </details>
+
+            <div class="actions">
+                <button id="randomizeBtn" type="button">Randomize All</button>
+                <button id="renderBtn" type="button">Render</button>
+                <button id="exportBtn" type="button">Export PNG</button>
+            </div>
+
+            <p class="hint">In Basic mode, use Variation + Handcraft and ignore the rest.</p>
+            <p class="hint advanced-only">Handcraft tip: drag on the texture preview to paint seamlessly across tile edges.</p>
+            <p class="hint">Export tip: save files into your <code>textures/</code> folder when prompted.</p>
+        </section>
+
+        <section class="panel preview">
+            <h2>Preview</h2>
+            <canvas id="textureCanvas" width="256" height="256" aria-label="Texture Preview"></canvas>
+            <p class="caption">Paint directly on this preview to handcraft details.</p>
+            <p class="caption">Tiled View</p>
+            <canvas id="tileCanvas" width="420" height="180" aria-label="Tiled Preview"></canvas>
+        </section>
+
+        <section class="panel ideas">
+            <div class="ideas-head">
+                <h2>Quick Ideas</h2>
+                <button id="ideasBtn" type="button">Generate 8 Ideas</button>
+            </div>
+            <p class="hint">Click any card to load it into the controls.</p>
+            <div id="ideasGrid" class="ideas-grid"></div>
+        </section>
+    </main>
+
+    <script src="texture-lab.shared.js"></script>
+    <script src="texture-lab.params.js"></script>
+    <script src="texture-lab.engine.js"></script>
+    <script src="texture-lab.handcraft.js"></script>
+    <script src="texture-lab.ui.js"></script>
+</body>
+</html>

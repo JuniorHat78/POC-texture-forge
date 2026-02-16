@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game v2</title>
+    <link rel="stylesheet" href="gamev2.css">
+</head>
+<body>
+    <main class="app">
+        <header class="top-bar">
+            <div>
+                <h1>Snake v2</h1>
+                <p>Arrow keys or WASD to move. Eat food, avoid walls and yourself.</p>
+            </div>
+            <div class="scores">
+                <p>Score: <strong id="score">0</strong></p>
+                <p>Best: <strong id="best">0</strong></p>
+            </div>
+        </header>
+
+        <section class="board-wrap">
+            <canvas id="canvas" width="600" height="400">
+                Your browser does not support HTML5 canvas.
+            </canvas>
+            <div id="overlay" class="overlay">Press Start to play</div>
+        </section>
+
+        <section class="controls">
+            <button id="startBtn" type="button">Start</button>
+            <button id="pauseBtn" type="button">Pause</button>
+            <button id="restartBtn" type="button">Restart</button>
+        </section>
+    </main>
+
+    <script src="gamev2.js"></script>
+</body>
+</html>

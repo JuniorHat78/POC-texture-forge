@@ -1,0 +1,12 @@
+body{
+    background: black;
+    color: white;
+}
+
+canvas{
+    background-color: green;
+}
+
+#centercanvas{
+    padding-left: 300px;
+}
