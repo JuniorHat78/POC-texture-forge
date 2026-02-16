@@ -18,6 +18,10 @@ This folder now has two parallel workflows:
    - Handcraft Strength
 4. Click `Render` and `Export PNG`.
 5. Save into `textures/`.
+6. In Advanced mode, use `Undo Paint` / `Redo Paint` or hotkeys:
+   - `Ctrl/Cmd+Z`: undo paint
+   - `Ctrl/Cmd+Shift+Z` or `Ctrl/Cmd+Y`: redo paint
+   - `R`: render, `H`: handcrafted pass
 
 ### CLI (deterministic + batch-friendly)
 ```bash
@@ -76,6 +80,7 @@ GUI modules:
 3. `experiments/texture-lab.engine.js`: procedural generation, render pipeline, and export.
 4. `experiments/texture-lab.handcraft.js`: seamless painting and handcrafted layer logic.
 5. `experiments/texture-lab.ui.js`: event wiring and app bootstrap.
+6. `experiments/texture-lab.worker.js`: background worker render path for larger textures (512x512).
 
 ## Test Suite
 

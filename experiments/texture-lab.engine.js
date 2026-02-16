@@ -6,6 +6,15 @@
 
     const d = Lab.dom;
     const tileSizeScaleBase = 256;
+    let renderWorker = null;
+
+    function setRenderBusy(isBusy, message = "") {
+        Lab.state.isRendering = isBusy;
+        d.textureCanvas.classList.toggle("busy", isBusy);
+        if (d.renderStatus) {
+            d.renderStatus.textContent = message;
+        }
+    }
 
     function valueNoisePeriodic(x, y, cells, seed) {
         const x0 = Math.floor(x);
@@ -159,6 +168,83 @@
         context.putImageData(imageData, 0, 0);
     }
 
+    function ensureRenderWorker() {
+        if (Lab.state.workerUnavailable || typeof Worker === "undefined") {
+            return null;
+        }
+        if (renderWorker) {
+            return renderWorker;
+        }
+
+        try {
+            renderWorker = new Worker("texture-lab.worker.js");
+        } catch {
+            Lab.state.workerUnavailable = true;
+            return null;
+        }
+
+        renderWorker.addEventListener("message", (event) => {
+            const payload = event.data || {};
+            if (payload.type === "render-failed" && payload.requestId === Lab.state.pendingRenderId) {
+                const fallback = Lab.state.pendingRenderSettings;
+                Lab.state.pendingRenderSettings = null;
+                if (fallback) {
+                    renderToCanvas(Lab.baseCanvas, fallback);
+                    composeTextureAndPreview();
+                }
+                setRenderBusy(false, "");
+                return;
+            }
+            if (payload.type !== "rendered") {
+                return;
+            }
+            if (payload.requestId !== Lab.state.pendingRenderId) {
+                return;
+            }
+
+            const width = Number(payload.width);
+            const height = Number(payload.height);
+            if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+                setRenderBusy(false, "");
+                return;
+            }
+
+            const pixels = new Uint8ClampedArray(payload.pixels || []);
+            if (pixels.length !== width * height * 4) {
+                setRenderBusy(false, "");
+                return;
+            }
+
+            const imageData = new ImageData(pixels, width, height);
+            const baseContext = Lab.baseCanvas.getContext("2d");
+            baseContext.putImageData(imageData, 0, 0);
+            Lab.state.pendingRenderSettings = null;
+            setRenderBusy(false, "");
+            composeTextureAndPreview();
+        });
+
+        renderWorker.addEventListener("error", () => {
+            Lab.state.workerUnavailable = true;
+            const fallback = Lab.state.pendingRenderSettings;
+            Lab.state.pendingRenderSettings = null;
+            if (fallback) {
+                renderToCanvas(Lab.baseCanvas, fallback);
+                composeTextureAndPreview();
+            }
+            setRenderBusy(false, "Render worker unavailable; using fallback render.");
+            if (renderWorker) {
+                renderWorker.terminate();
+                renderWorker = null;
+            }
+        });
+
+        return renderWorker;
+    }
+
+    function shouldUseWorker(settings) {
+        return settings.size >= 512 && !Lab.state.workerUnavailable && typeof Worker !== "undefined";
+    }
+
     function drawTiledPreview() {
         const context = d.tileCanvas.getContext("2d");
         context.clearRect(0, 0, d.tileCanvas.width, d.tileCanvas.height);
@@ -204,7 +290,9 @@
         d.seedInput.value = String(settings.seed);
         const resized = ensureLayerSize(settings.size);
         if (resized || clearPaint) {
-            if (typeof Lab.clearPaintLayer === "function") {
+            if (typeof Lab.clearPaintLayerWithHistory === "function") {
+                Lab.clearPaintLayerWithHistory(true, false);
+            } else if (typeof Lab.clearPaintLayer === "function") {
                 Lab.clearPaintLayer(true);
             } else {
                 Lab.contexts.paint.clearRect(0, 0, Lab.paintCanvas.width, Lab.paintCanvas.height);
@@ -212,7 +300,27 @@
             Lab.state.handcraftPassCount = 0;
         }
 
+        Lab.state.pendingRenderId += 1;
+        const requestId = Lab.state.pendingRenderId;
+        Lab.state.pendingRenderSettings = settings;
+
+        if (shouldUseWorker(settings)) {
+            const worker = ensureRenderWorker();
+            if (worker) {
+                setRenderBusy(true, `Rendering ${settings.size}x${settings.size} texture...`);
+                worker.postMessage({
+                    type: "render",
+                    requestId,
+                    settings
+                });
+                return;
+            }
+        }
+
+        setRenderBusy(true, "");
         renderToCanvas(Lab.baseCanvas, settings);
+        Lab.state.pendingRenderSettings = null;
+        setRenderBusy(false, "");
         composeTextureAndPreview();
     }
 

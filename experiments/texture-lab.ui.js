@@ -41,6 +41,69 @@
         }
     }
 
+    function isTextEntryTarget(target) {
+        if (!target || typeof target.tagName !== "string") {
+            return false;
+        }
+        const tag = target.tagName.toLowerCase();
+        if (tag === "input" || tag === "textarea" || tag === "select") {
+            return true;
+        }
+        return Boolean(target.isContentEditable);
+    }
+
+    function handleHotkeys(event) {
+        if (isTextEntryTarget(event.target)) {
+            return;
+        }
+
+        const key = String(event.key || "").toLowerCase();
+        const mod = event.ctrlKey || event.metaKey;
+
+        if (mod && key === "z") {
+            event.preventDefault();
+            if (event.shiftKey) {
+                if (typeof Lab.redoPaintAction === "function") {
+                    Lab.redoPaintAction();
+                }
+            } else if (typeof Lab.undoPaintAction === "function") {
+                Lab.undoPaintAction();
+            }
+            return;
+        }
+
+        if (mod && key === "y") {
+            event.preventDefault();
+            if (typeof Lab.redoPaintAction === "function") {
+                Lab.redoPaintAction();
+            }
+            return;
+        }
+
+        if (!mod && !event.altKey && key === "r") {
+            event.preventDefault();
+            Lab.renderMain(false);
+            return;
+        }
+
+        if (!mod && !event.altKey && key === "h") {
+            event.preventDefault();
+            Lab.applyHandcraftedPass();
+            return;
+        }
+
+        if (!mod && !event.altKey && key === "g") {
+            event.preventDefault();
+            generateIdeas();
+            return;
+        }
+
+        if (!mod && !event.altKey && key === "e") {
+            event.preventDefault();
+            Lab.exportTexture();
+        }
+    }
+
     function wireEvents() {
         [
             d.variationInput,
@@ -87,6 +150,20 @@
         d.ideasBtn.addEventListener("click", generateIdeas);
         d.applyHandcraftBtn.addEventListener("click", Lab.applyHandcraftedPass);
         d.clearPaintBtn.addEventListener("click", () => Lab.clearPaintLayer());
+        if (d.undoPaintBtn) {
+            d.undoPaintBtn.addEventListener("click", () => {
+                if (typeof Lab.undoPaintAction === "function") {
+                    Lab.undoPaintAction();
+                }
+            });
+        }
+        if (d.redoPaintBtn) {
+            d.redoPaintBtn.addEventListener("click", () => {
+                if (typeof Lab.redoPaintAction === "function") {
+                    Lab.redoPaintAction();
+                }
+            });
+        }
 
         [d.styleSelect, d.seedInput, d.sizeSelect].forEach((control) => {
             control.addEventListener("change", () => Lab.renderMain(true));
@@ -102,6 +179,7 @@
         d.textureCanvas.addEventListener("pointerup", Lab.stopPainting);
         d.textureCanvas.addEventListener("pointercancel", Lab.stopPainting);
         d.textureCanvas.addEventListener("pointerleave", Lab.stopPainting);
+        document.addEventListener("keydown", handleHotkeys);
     }
 
     function init() {
@@ -109,6 +187,9 @@
         Lab.syncVariationFromAdvanced();
         Lab.applyUIMode();
         Lab.syncValuePills();
+        if (typeof Lab.syncHistoryButtons === "function") {
+            Lab.syncHistoryButtons();
+        }
         Lab.renderMain(true);
         Lab.applyHandcraftedPass();
         generateIdeas();

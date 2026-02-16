@@ -119,6 +119,11 @@
                     <button id="applyHandcraftBtn" type="button">Apply Handcrafted Pass</button>
                     <button id="clearPaintBtn" type="button">Clear Paint Layer</button>
                 </div>
+
+                <div class="actions actions-two">
+                    <button id="undoPaintBtn" type="button">Undo Paint</button>
+                    <button id="redoPaintBtn" type="button">Redo Paint</button>
+                </div>
             </details>
 
             <div class="actions">
@@ -129,6 +134,7 @@
 
             <p class="hint">In Basic mode, use Variation + Handcraft and ignore the rest.</p>
             <p class="hint advanced-only">Handcraft tip: drag on the texture preview to paint seamlessly across tile edges.</p>
+            <p class="hint advanced-only">Hotkeys: Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z redo, R render, H handcrafted pass.</p>
             <p class="hint">Export tip: save files into your <code>textures/</code> folder when prompted.</p>
         </section>
 
@@ -136,6 +142,7 @@
             <h2>Preview</h2>
             <canvas id="textureCanvas" width="256" height="256" aria-label="Texture Preview"></canvas>
             <p class="caption">Paint directly on this preview to handcraft details.</p>
+            <p id="renderStatus" class="caption status" aria-live="polite"></p>
             <p class="caption">Tiled View</p>
             <canvas id="tileCanvas" width="420" height="180" aria-label="Tiled Preview"></canvas>
         </section>

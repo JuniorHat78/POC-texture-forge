@@ -37,7 +37,10 @@
         exportBtn: byId("exportBtn"),
         ideasBtn: byId("ideasBtn"),
         applyHandcraftBtn: byId("applyHandcraftBtn"),
-        clearPaintBtn: byId("clearPaintBtn")
+        clearPaintBtn: byId("clearPaintBtn"),
+        undoPaintBtn: byId("undoPaintBtn"),
+        redoPaintBtn: byId("redoPaintBtn"),
+        renderStatus: byId("renderStatus")
     };
 
     if (!dom.textureCanvas || !dom.tileCanvas || !dom.controlsPanel) {
@@ -53,7 +56,14 @@
     const state = {
         isPainting: false,
         lastPaintPoint: null,
-        handcraftPassCount: 0
+        handcraftPassCount: 0,
+        isRendering: false,
+        pendingRenderId: 0,
+        pendingRenderSettings: null,
+        workerUnavailable: false,
+        paintUndoStack: [],
+        paintRedoStack: [],
+        paintStrokeBefore: null
     };
 
     function clamp(value, min, max) {

@@ -199,6 +199,13 @@ button:active {
     transform: translateY(0);
 }
 
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    filter: saturate(0.8);
+    transform: none;
+}
+
 button.small {
     margin-top: 6px;
 }
@@ -246,6 +253,11 @@ canvas {
     touch-action: none;
 }
 
+#textureCanvas.busy {
+    cursor: progress;
+    opacity: 0.9;
+}
+
 #tileCanvas {
     aspect-ratio: 7 / 3;
 }
@@ -254,6 +266,11 @@ canvas {
     margin: 0;
     font-size: 0.82rem;
     color: var(--muted);
+}
+
+.status {
+    min-height: 1.1em;
+    color: #99f6e4;
 }
 
 .ideas {

@@ -5,6 +5,53 @@
     }
 
     const d = Lab.dom;
+    const MAX_HISTORY = 24;
+
+    function snapshotPaintLayer() {
+        return Lab.contexts.paint.getImageData(0, 0, Lab.paintCanvas.width, Lab.paintCanvas.height);
+    }
+
+    function snapshotsDiffer(a, b) {
+        if (!a || !b || a.width !== b.width || a.height !== b.height) {
+            return true;
+        }
+        const aData = a.data;
+        const bData = b.data;
+        if (aData.length !== bData.length) {
+            return true;
+        }
+        for (let i = 0; i < aData.length; i += 1) {
+            if (aData[i] !== bData[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function trimStack(stack) {
+        while (stack.length > MAX_HISTORY) {
+            stack.shift();
+        }
+    }
+
+    function syncHistoryButtons() {
+        if (d.undoPaintBtn) {
+            d.undoPaintBtn.disabled = Lab.state.paintUndoStack.length === 0;
+        }
+        if (d.redoPaintBtn) {
+            d.redoPaintBtn.disabled = Lab.state.paintRedoStack.length === 0;
+        }
+    }
+
+    function pushHistoryMutation(before, after) {
+        if (!snapshotsDiffer(before, after)) {
+            return;
+        }
+        Lab.state.paintUndoStack.push(before);
+        trimStack(Lab.state.paintUndoStack);
+        Lab.state.paintRedoStack.length = 0;
+        syncHistoryButtons();
+    }
 
     function readBrushSettings() {
         const scaleFactor = d.textureCanvas.width / Lab.tileSizeScaleBase;
@@ -152,18 +199,41 @@
     }
 
     function clearPaintLayer(skipCompose = false) {
+        clearPaintLayerWithHistory(skipCompose, true);
+    }
+
+    function clearPaintLayerWithHistory(skipCompose = false, trackHistory = true) {
+        if (!trackHistory) {
+            Lab.contexts.paint.clearRect(0, 0, Lab.paintCanvas.width, Lab.paintCanvas.height);
+            Lab.state.paintUndoStack.length = 0;
+            Lab.state.paintRedoStack.length = 0;
+            Lab.state.paintStrokeBefore = null;
+            syncHistoryButtons();
+            if (!skipCompose) {
+                Lab.composeTextureAndPreview();
+            }
+            return;
+        }
+
+        const before = snapshotPaintLayer();
         Lab.contexts.paint.clearRect(0, 0, Lab.paintCanvas.width, Lab.paintCanvas.height);
+        const after = snapshotPaintLayer();
+        pushHistoryMutation(before, after);
         if (!skipCompose) {
             Lab.composeTextureAndPreview();
         }
     }
 
     function applyHandcraftedPass() {
+        if (Lab.state.isRendering) {
+            return;
+        }
         const settings = Lab.readSettings();
         if (settings.handcraft <= 0) {
             return;
         }
 
+        const before = snapshotPaintLayer();
         Lab.state.handcraftPassCount += 1;
         applyHandcraftedLayer(
             Lab.contexts.paint,
@@ -172,7 +242,37 @@
             settings,
             Lab.state.handcraftPassCount
         );
+        const after = snapshotPaintLayer();
+        pushHistoryMutation(before, after);
         Lab.composeTextureAndPreview();
+    }
+
+    function undoPaintAction() {
+        if (Lab.state.isRendering || Lab.state.paintUndoStack.length === 0) {
+            return false;
+        }
+        const current = snapshotPaintLayer();
+        const previous = Lab.state.paintUndoStack.pop();
+        Lab.state.paintRedoStack.push(current);
+        trimStack(Lab.state.paintRedoStack);
+        Lab.contexts.paint.putImageData(previous, 0, 0);
+        Lab.composeTextureAndPreview();
+        syncHistoryButtons();
+        return true;
+    }
+
+    function redoPaintAction() {
+        if (Lab.state.isRendering || Lab.state.paintRedoStack.length === 0) {
+            return false;
+        }
+        const current = snapshotPaintLayer();
+        const next = Lab.state.paintRedoStack.pop();
+        Lab.state.paintUndoStack.push(current);
+        trimStack(Lab.state.paintUndoStack);
+        Lab.contexts.paint.putImageData(next, 0, 0);
+        Lab.composeTextureAndPreview();
+        syncHistoryButtons();
+        return true;
     }
 
     function canvasPointFromEvent(event) {
@@ -189,6 +289,9 @@
     }
 
     function startPainting(event) {
+        if (Lab.state.isRendering) {
+            return;
+        }
         if (event.pointerType === "mouse" && event.button !== 0) {
             return;
         }
@@ -201,6 +304,7 @@
 
         Lab.state.isPainting = true;
         Lab.state.lastPaintPoint = point;
+        Lab.state.paintStrokeBefore = snapshotPaintLayer();
 
         if (d.textureCanvas.setPointerCapture) {
             d.textureCanvas.setPointerCapture(event.pointerId);
@@ -220,7 +324,7 @@
     }
 
     function continuePainting(event) {
-        if (!Lab.state.isPainting) {
+        if (Lab.state.isRendering || !Lab.state.isPainting) {
             return;
         }
 
@@ -258,7 +362,15 @@
 
         Lab.state.isPainting = false;
         Lab.state.lastPaintPoint = null;
+        const before = Lab.state.paintStrokeBefore;
+        Lab.state.paintStrokeBefore = null;
+        if (before) {
+            const after = snapshotPaintLayer();
+            pushHistoryMutation(before, after);
+        }
     }
+
+    syncHistoryButtons();
 
     Lab.readBrushSettings = readBrushSettings;
     Lab.getBrushBlendSpec = getBrushBlendSpec;
@@ -267,7 +379,11 @@
     Lab.pickStyleColorHex = pickStyleColorHex;
     Lab.applyHandcraftedLayer = applyHandcraftedLayer;
     Lab.clearPaintLayer = clearPaintLayer;
+    Lab.clearPaintLayerWithHistory = clearPaintLayerWithHistory;
     Lab.applyHandcraftedPass = applyHandcraftedPass;
+    Lab.undoPaintAction = undoPaintAction;
+    Lab.redoPaintAction = redoPaintAction;
+    Lab.syncHistoryButtons = syncHistoryButtons;
     Lab.canvasPointFromEvent = canvasPointFromEvent;
     Lab.startPainting = startPainting;
     Lab.continuePainting = continuePainting;
